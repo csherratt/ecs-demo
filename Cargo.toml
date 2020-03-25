@@ -8,4 +8,18 @@ edition = "2018"
 
 [dependencies]
 specs="0.16"
+specs-derive="0.4.1"
 legion="0.2"
+criterion = "0.3"
+
+[[bench]]
+name = "legion_benches"
+harness = false
+
+[[bench]]
+name = "specs_benches"
+harness = false
+
+[[bench]]
+name = "baseline_benches"
+harness = false
