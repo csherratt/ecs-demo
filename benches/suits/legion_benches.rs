@@ -3,7 +3,6 @@ use legion::prelude::*;
 use criterion::measurement::WallTime;
 use super::super::utils::{Warm, Cold, CustomBencher};
 use std::time::Instant;
-use crate::suits::BLOCK_SIZE;
 
 #[derive(Copy, Clone, Debug, Default)]
 struct A(u32);
@@ -263,21 +262,21 @@ pub fn legion_delete(group: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
-pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
-    bench_with::<Warm>(&mut *group, "legion-warm");
-    bench_with::<Cold>(&mut *group, "legion-cold");
+pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
+    bench_with::<Warm>(&mut *group, "legion-warm", dataset_size);
+    bench_with::<Cold>(&mut *group, "legion-cold", dataset_size);
 
-    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str)
+    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str, dataset_size: usize)
         where BENCH: CustomBencher
     {
         group.bench_with_input(BenchmarkId::new(name, 1), &1, |bencher, _| {
             let mut world = legion_world_create();
             world.insert(
                 (),
-                (0..BLOCK_SIZE).map(|_| (A(0),))
+                (0..dataset_size).map(|_| (A(0),))
             );
             let query = <Read<A>>::query();
-            BENCH::run(bencher, BLOCK_SIZE as u32, |iters| {
+            BENCH::run(bencher, dataset_size as u32, |iters| {
                 for a in query.iter(&mut world).take(iters as usize) {
                     criterion::black_box(*a);
                 }
@@ -287,10 +286,10 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
             let mut world = legion_world_create();
             world.insert(
                 (),
-                (0..BLOCK_SIZE).map(|_| (A(0), B(0)))
+                (0..dataset_size).map(|_| (A(0), B(0)))
             );
             let query = <(Read<A>, Read<B>)>::query();
-            BENCH::run(bencher, BLOCK_SIZE as u32, |iters| {
+            BENCH::run(bencher, dataset_size as u32, |iters| {
                 for (a, b) in query.iter(&mut world).take(iters as usize) {
                     criterion::black_box((*a, *b));
                 }
@@ -300,10 +299,10 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
             let mut world = legion_world_create();
             world.insert(
                 (),
-                (0..BLOCK_SIZE).map(|_| (A(0), B(0), C(0)))
+                (0..dataset_size).map(|_| (A(0), B(0), C(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>)>::query();
-            BENCH::run(bencher, BLOCK_SIZE as u32, |iters| {
+            BENCH::run(bencher, dataset_size as u32, |iters| {
                 for (a, b, c) in query.iter(&mut world).take(iters as usize) {
                     criterion::black_box((*a, *b, *c));
                 }
@@ -313,10 +312,10 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
             let mut world = legion_world_create();
             world.insert(
                 (),
-                (0..BLOCK_SIZE).map(|_| (A(0), B(0), C(0), D(0)))
+                (0..dataset_size).map(|_| (A(0), B(0), C(0), D(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>, Read<D>)>::query();
-            BENCH::run(bencher, BLOCK_SIZE as u32, |iters| {
+            BENCH::run(bencher, dataset_size as u32, |iters| {
                 for (a, b, c, d) in query.iter(&mut world).take(iters as usize) {
                     criterion::black_box((*a, *b, *c, *d));
                 }
@@ -326,10 +325,10 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
             let mut world = legion_world_create();
             world.insert(
                 (),
-                (0..BLOCK_SIZE).map(|_| (A(0), B(0), C(0), D(0), E(0)))
+                (0..dataset_size).map(|_| (A(0), B(0), C(0), D(0), E(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>, Read<D>, Read<E>)>::query();
-            BENCH::run(bencher, BLOCK_SIZE as u32, |iters| {
+            BENCH::run(bencher, dataset_size as u32, |iters| {
                 for (a, b, c, d, e) in query.iter(&mut world).take(iters as usize) {
                     criterion::black_box((*a, *b, *c, *d, *e));
                 }
@@ -339,10 +338,10 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
             let mut world = legion_world_create();
             world.insert(
                 (),
-                (0..BLOCK_SIZE).map(|_| (A(0), B(0), C(0), D(0), E(0), F(0)))
+                (0..dataset_size).map(|_| (A(0), B(0), C(0), D(0), E(0), F(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>, Read<D>, Read<E>, Read<F>)>::query();
-            BENCH::run(bencher, BLOCK_SIZE as u32, |iters| {
+            BENCH::run(bencher, dataset_size as u32, |iters| {
                 for (a, b, c, d, e, f) in query.iter(&mut world).take(iters as usize) {
                     criterion::black_box((*a, *b, *c, *d, *e, *f));
                 }

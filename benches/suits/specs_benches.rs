@@ -1,41 +1,9 @@
-use criterion::*;
 use specs::prelude::*;
+use criterion::*;
 use criterion::measurement::WallTime;
 use super::super::utils::{Cold, Warm, CustomBencher};
 use std::time::Instant;
-use crate::suits::BLOCK_SIZE;
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct A(u32);
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct B(u32);
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct C(u32);
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct D(u32);
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct E(u32);
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct F(u32);
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct G(u32);
-
-#[derive(Component, Copy, Clone, Debug, Default)]
-#[storage(VecStorage)]
-struct H(u32);
+use crate::suits::{A, B, C, D, E, F, G, H};
 
 fn specs_world_create() -> specs::World {
     let mut world = specs::World::new();
@@ -312,12 +280,12 @@ pub fn specs_delete(group: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
-fn with_world<INNER>(mut inner: INNER)
+fn with_world<INNER>(dataset_size: u32, mut inner: INNER)
     where INNER: FnMut(ReadStorage<A>, ReadStorage<B>, ReadStorage<C>,
                        ReadStorage<D>, ReadStorage<E>, ReadStorage<F>)
 {
     let mut world = specs_world_create();
-    (0..BLOCK_SIZE).for_each(|_| {
+    (0..dataset_size).for_each(|_| {
         world.create_entity()
             .with(A::default())
             .with(B::default())
@@ -337,62 +305,62 @@ fn with_world<INNER>(mut inner: INNER)
     inner(a, b, c, d, e, f);
 }
 
-pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
-    bench_with::<Cold>(&mut *group, "specs-cold");
-    bench_with::<Warm>(&mut *group, "specs-warm");
+pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
+    bench_with::<Cold>(&mut *group, "specs-cold", dataset_size as u32);
+    bench_with::<Warm>(&mut *group, "specs-warm", dataset_size as u32);
 
-    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str)
+    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str, dataset_size: u32)
         where BENCH: CustomBencher
     {
         group.bench_with_input(BenchmarkId::new(name, 1), &1, |bencher, _| {
-            with_world(|a, _, _, _, _, _| {
-                BENCH::run(bencher, BLOCK_SIZE, |iters| {
-                    for (a, ) in (&a, ).join().cycle().take(iters as usize) {
+            with_world(dataset_size, |a, _, _, _, _, _| {
+                BENCH::run(bencher, dataset_size, |iters| {
+                    for (a, ) in (&a, ).join().take(iters as usize) {
                         black_box(*a);
                     }
                 })
             });
         });
         group.bench_with_input(BenchmarkId::new(name, 2), &2, |bencher, _| {
-            with_world(|a, b, _, _, _, _| {
-                BENCH::run(bencher, BLOCK_SIZE, |iters| {
-                    for (a, b) in (&a, &b).join().cycle().take(iters as usize) {
+            with_world(dataset_size, |a, b, _, _, _, _| {
+                BENCH::run(bencher, dataset_size, |iters| {
+                    for (a, b) in (&a, &b).join().take(iters as usize) {
                         black_box((*a, *b));
                     }
                 })
             });
         });
         group.bench_with_input(BenchmarkId::new(name, 3), &3, |bencher, _| {
-            with_world(|a, b, c, _, _, _| {
-                BENCH::run(bencher, BLOCK_SIZE, |iters| {
-                    for (a, b, c) in (&a, &b, &c).join().cycle().take(iters as usize) {
+            with_world(dataset_size, |a, b, c, _, _, _| {
+                BENCH::run(bencher, dataset_size, |iters| {
+                    for (a, b, c) in (&a, &b, &c).join().take(iters as usize) {
                         black_box((*a, *b, *c));
                     }
                 })
             });
         });
         group.bench_with_input(BenchmarkId::new(name, 4), &4, |bencher, _| {
-            with_world(|a, b, c, d, _, _| {
-                BENCH::run(bencher, BLOCK_SIZE, |iters| {
-                    for (a, b, c, d) in (&a, &b, &c, &d).join().cycle().take(iters as usize) {
+            with_world(dataset_size, |a, b, c, d, _, _| {
+                BENCH::run(bencher, dataset_size, |iters| {
+                    for (a, b, c, d) in (&a, &b, &c, &d).join().take(iters as usize) {
                         black_box((*a, *b, *c, *d));
                     }
                 })
             });
         });
         group.bench_with_input(BenchmarkId::new(name, 5), &5, |bencher, _| {
-            with_world(|a, b, c, d, e, _| {
-                BENCH::run(bencher, BLOCK_SIZE, |iters| {
-                    for (a, b, c, d, e) in (&a, &b, &c, &d, &e).join().cycle().take(iters as usize) {
+            with_world(dataset_size, |a, b, c, d, e, _| {
+                BENCH::run(bencher, dataset_size, |iters| {
+                    for (a, b, c, d, e) in (&a, &b, &c, &d, &e).join().take(iters as usize) {
                         black_box((*a, *b, *c, *d, *e));
                     }
                 })
             });
         });
         group.bench_with_input(BenchmarkId::new(name, 6), &6, |bencher, _| {
-            with_world(|a, b, c, d, e, f| {
-                BENCH::run(bencher, BLOCK_SIZE, |iters| {
-                    for (a, b, c, d, e, f) in (&a, &b, &c, &d, &e, &f).join().cycle().take(iters as usize) {
+            with_world(dataset_size, |a, b, c, d, e, f| {
+                BENCH::run(bencher, dataset_size, |iters| {
+                    for (a, b, c, d, e, f) in (&a, &b, &c, &d, &e, &f).join().take(iters as usize) {
                         black_box((*a, *b, *c, *d, *e, *f));
                     }
                 })

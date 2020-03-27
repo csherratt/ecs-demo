@@ -17,12 +17,14 @@ fn main() {
         .warm_up_time(Duration::from_millis(100))
         .configure_from_args();
 
-    let mut group = criterion.benchmark_group("iteration");
-    baseline_benches::iteration_aos(&mut group);
-    baseline_benches::iteration_soa(&mut group);
-    specs_benches::iteration(&mut group);
-    legion_benches::iteration(&mut group);
-    group.finish();
+    for &dataset_size in &[100, 1000, 10_000, 100_000] {
+        let mut group = criterion.benchmark_group(format!("iteration-{}", dataset_size));
+        baseline_benches::iteration_aos(&mut group, dataset_size);
+        baseline_benches::iteration_soa(&mut group, dataset_size);
+        specs_benches::iteration(&mut group, dataset_size);
+        legion_benches::iteration(&mut group, dataset_size);
+        group.finish();
+    }
 
     let mut group = criterion.benchmark_group("iteration-archetypes");
     legion_benches::iteration_by_archetypes(&mut group);
