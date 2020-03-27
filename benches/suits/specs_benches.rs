@@ -1,11 +1,9 @@
-extern crate specs;
-#[macro_use]
-extern crate specs_derive;
-
 use criterion::*;
 use specs::prelude::*;
-use criterion::BatchSize::PerIteration;
-use std::time::{Instant, Duration};
+use criterion::measurement::WallTime;
+use super::super::utils::{Cold, Warm, CustomBencher};
+use std::time::Instant;
+use crate::suits::BLOCK_SIZE;
 
 #[derive(Component, Copy, Clone, Debug, Default)]
 #[storage(VecStorage)]
@@ -52,27 +50,11 @@ fn specs_world_create() -> specs::World {
     world
 }
 
-fn world_create_components() -> (World, Entity) {
-    let mut world = specs_world_create();
-    let entity = world.create_entity()
-        .with(A::default())
-        .with(B::default())
-        .with(C::default())
-        .with(D::default())
-        .with(E::default())
-        .with(F::default())
-        .with(G::default())
-        .with(H::default())
-        .build();
-    (world, entity)
-}
-
 type Args<'a> = (Entities<'a>,
                  WriteStorage<'a, A>, WriteStorage<'a, B>, WriteStorage<'a, C>, WriteStorage<'a, D>,
                  WriteStorage<'a, E>, WriteStorage<'a, F>, WriteStorage<'a, G>, WriteStorage<'a, H>);
 
-pub fn specs_create(c: &mut Criterion) {
-    let mut group = c.benchmark_group("specs-create");
+pub fn specs_create(group: &mut BenchmarkGroup<WallTime>) {
     group.bench_with_input(BenchmarkId::new("external", 0), &0, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
@@ -166,16 +148,13 @@ pub fn specs_create(c: &mut Criterion) {
             end.duration_since(start)
         });
     });
-    group.finish();
 
-    let mut group = c.benchmark_group("specs-create");
     group.bench_with_input(BenchmarkId::new("system", 0), &0, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
-            world.exec(|(entities, mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h): Args| {
+            world.exec(|(entities, _, _, _, _, _, _, _, _): Args| {
                 let start = Instant::now();
-                for entity in entities.create_iter().take(iters as usize) {
-                }
+                entities.create_iter().take(iters as usize).for_each(|_| {});
                 let end = Instant::now();
                 end.duration_since(start)
             })
@@ -184,7 +163,7 @@ pub fn specs_create(c: &mut Criterion) {
     group.bench_with_input(BenchmarkId::new("system", 1), &1, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
-            world.exec(|(entities, mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h): Args| {
+            world.exec(|(entities, mut a, _, _, _, _, _, _, _): Args| {
                 let start = Instant::now();
                 for entity in entities.create_iter().take(iters as usize) {
                     a.insert(entity, Default::default()).unwrap();
@@ -197,7 +176,7 @@ pub fn specs_create(c: &mut Criterion) {
     group.bench_with_input(BenchmarkId::new("system", 2), &2, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
-            world.exec(|(entities, mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h): Args| {
+            world.exec(|(entities, mut a, mut b, _, _, _, _, _, _): Args| {
                 let start = Instant::now();
                 for entity in entities.create_iter().take(iters as usize) {
                     a.insert(entity, Default::default()).unwrap();
@@ -211,7 +190,7 @@ pub fn specs_create(c: &mut Criterion) {
     group.bench_with_input(BenchmarkId::new("system", 4), &4, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
-            world.exec(|(entities, mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h): Args| {
+            world.exec(|(entities, mut a, mut b, mut c, mut d, _, _, _, _): Args| {
                 let start = Instant::now();
                 for entity in entities.create_iter().take(iters as usize) {
                     a.insert(entity, Default::default()).unwrap();
@@ -227,7 +206,7 @@ pub fn specs_create(c: &mut Criterion) {
     group.bench_with_input(BenchmarkId::new("system", 6), &6, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
-            world.exec(|(entities, mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h): Args| {
+            world.exec(|(entities, mut a, mut b, mut c, mut d, mut e, mut f, _, _): Args| {
                 let start = Instant::now();
                 for entity in entities.create_iter().take(iters as usize) {
                     a.insert(entity, Default::default()).unwrap();
@@ -262,10 +241,10 @@ pub fn specs_create(c: &mut Criterion) {
             })
         });
     });
-    group.finish();
+}
 
-
-    c.bench_function("specs-delete-1-of-8", |bencher| {
+pub fn specs_delete(group: &mut BenchmarkGroup<WallTime>) {
+    group.bench_function("specs-delete-1-of-8", |bencher| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
             let enitites: Vec<_> = (0..iters).map(|_| {
@@ -290,7 +269,7 @@ pub fn specs_create(c: &mut Criterion) {
             end.duration_since(start)
         });
     });
-    c.bench_function("specs-delete-8", |bencher| {
+    group.bench_function("specs-delete-8", |bencher| {
         bencher.iter_custom(|iters| {
             let mut world = specs_world_create();
             let enitites: Vec<_> = (0..iters).map(|_| {
@@ -333,10 +312,12 @@ pub fn specs_create(c: &mut Criterion) {
     });
 }
 
-pub fn iteration(criterion: &mut Criterion) {
-    let block_size = 10_000;
+fn with_world<INNER>(mut inner: INNER)
+    where INNER: FnMut(ReadStorage<A>, ReadStorage<B>, ReadStorage<C>,
+                       ReadStorage<D>, ReadStorage<E>, ReadStorage<F>)
+{
     let mut world = specs_world_create();
-    (0..block_size).for_each(|_| {
+    (0..BLOCK_SIZE).for_each(|_| {
         world.create_entity()
             .with(A::default())
             .with(B::default())
@@ -344,85 +325,81 @@ pub fn iteration(criterion: &mut Criterion) {
             .with(D::default())
             .with(E::default())
             .with(F::default())
-            .with(G::default())
-            .with(H::default())
             .build();
     });
-    let (a, b, c, d, e, f,) = world.system_data::<
+    let (a, b, c, d, e, f) = world.system_data::<
         (ReadStorage<A>,
          ReadStorage<B>,
          ReadStorage<C>,
          ReadStorage<D>,
          ReadStorage<E>,
          ReadStorage<F>)>();
+    inner(a, b, c, d, e, f);
+}
 
-    let mut group = criterion.benchmark_group("specs");
-    group.bench_with_input(BenchmarkId::new("iteration", 1), &1, |bencher, _| {
-        bencher.iter_custom(|iters| {
-            let start = Instant::now();
-            for (a,) in (&a,).join().cycle().take(iters as usize) {
-                black_box(*a);
-            }
-            Instant::now().duration_since(start)
-        })
-    });
-    group.bench_with_input(BenchmarkId::new("iteration", 2), &2, |bencher, _| {
-        bencher.iter_custom(|iters| {
-            let start = Instant::now();
-            for (a, b) in (&a, &b).join().cycle().take(iters as usize) {
-                black_box((*a, *b));
-            }
-            Instant::now().duration_since(start)
-        })
-    });
-    group.bench_with_input(BenchmarkId::new("iteration", 3), &3, |bencher, _| {
-        bencher.iter_custom(|iters| {
-            let start = Instant::now();
-            for (a, b, c) in (&a, &b, &c).join().cycle().take(iters as usize) {
-                black_box((*a, *b, *c));
-            }
-            Instant::now().duration_since(start)
-        })
-    });
-    group.bench_with_input(BenchmarkId::new("iteration", 4), &4, |bencher, _| {
-        bencher.iter_custom(|iters| {
-            let start = Instant::now();
-            for (a, b, c, d) in (&a, &b, &c, &d).join().cycle().take(iters as usize) {
-                black_box((*a, *b, *c, *d));
-            }
-            Instant::now().duration_since(start)
-        })
-    });
-    group.bench_with_input(BenchmarkId::new("iteration", 5), &5, |bencher, _| {
-        bencher.iter_custom(|iters| {
-            let start = Instant::now();
-            for (a, b, c, d, e) in (&a, &b, &c, &d, &e).join().cycle().take(iters as usize) {
-                black_box((*a, *b, *c, *d));
-            }
-            Instant::now().duration_since(start)
-        })
-    });
-    group.bench_with_input(BenchmarkId::new("iteration", 6), &6, |bencher, _| {
-        bencher.iter_custom(|iters| {
-            let start = Instant::now();
-            for (a, b, c, d, e, f) in (&a, &b, &c, &d, &e, &f).join().cycle().take(iters as usize) {
-                black_box((*a, *b, *c, *d, *e, *f));
-            }
-            Instant::now().duration_since(start)
-        })
-    });
-    group.finish();
+pub fn iteration(group: &mut BenchmarkGroup<WallTime>) {
+    bench_with::<Cold>(&mut *group, "specs-cold");
+    bench_with::<Warm>(&mut *group, "specs-warm");
+
+    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str)
+        where BENCH: CustomBencher
+    {
+        group.bench_with_input(BenchmarkId::new(name, 1), &1, |bencher, _| {
+            with_world(|a, _, _, _, _, _| {
+                BENCH::run(bencher, BLOCK_SIZE, |iters| {
+                    for (a, ) in (&a, ).join().cycle().take(iters as usize) {
+                        black_box(*a);
+                    }
+                })
+            });
+        });
+        group.bench_with_input(BenchmarkId::new(name, 2), &2, |bencher, _| {
+            with_world(|a, b, _, _, _, _| {
+                BENCH::run(bencher, BLOCK_SIZE, |iters| {
+                    for (a, b) in (&a, &b).join().cycle().take(iters as usize) {
+                        black_box((*a, *b));
+                    }
+                })
+            });
+        });
+        group.bench_with_input(BenchmarkId::new(name, 3), &3, |bencher, _| {
+            with_world(|a, b, c, _, _, _| {
+                BENCH::run(bencher, BLOCK_SIZE, |iters| {
+                    for (a, b, c) in (&a, &b, &c).join().cycle().take(iters as usize) {
+                        black_box((*a, *b, *c));
+                    }
+                })
+            });
+        });
+        group.bench_with_input(BenchmarkId::new(name, 4), &4, |bencher, _| {
+            with_world(|a, b, c, d, _, _| {
+                BENCH::run(bencher, BLOCK_SIZE, |iters| {
+                    for (a, b, c, d) in (&a, &b, &c, &d).join().cycle().take(iters as usize) {
+                        black_box((*a, *b, *c, *d));
+                    }
+                })
+            });
+        });
+        group.bench_with_input(BenchmarkId::new(name, 5), &5, |bencher, _| {
+            with_world(|a, b, c, d, e, _| {
+                BENCH::run(bencher, BLOCK_SIZE, |iters| {
+                    for (a, b, c, d, e) in (&a, &b, &c, &d, &e).join().cycle().take(iters as usize) {
+                        black_box((*a, *b, *c, *d, *e));
+                    }
+                })
+            });
+        });
+        group.bench_with_input(BenchmarkId::new(name, 6), &6, |bencher, _| {
+            with_world(|a, b, c, d, e, f| {
+                BENCH::run(bencher, BLOCK_SIZE, |iters| {
+                    for (a, b, c, d, e, f) in (&a, &b, &c, &d, &e, &f).join().cycle().take(iters as usize) {
+                        black_box((*a, *b, *c, *d, *e, *f));
+                    }
+                })
+            });
+        });
+    }
 }
 
 
-fn main() {
-    let mut criterion = Criterion::default()
-        .warm_up_time(Duration::from_millis(100))
-        .configure_from_args();
 
-    specs_create(&mut criterion);
-    iteration(&mut criterion);
-
-    criterion.final_summary();
-
-}

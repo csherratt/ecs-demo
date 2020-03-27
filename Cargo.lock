@@ -259,6 +259,7 @@ name = "ecs-demo"
 version = "0.1.0"
 dependencies = [
  "criterion 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "legion 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs-derive 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
