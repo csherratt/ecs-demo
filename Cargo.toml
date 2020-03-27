@@ -17,3 +17,5 @@ lazy_static = "1.4.0"
 name = "benches"
 harness = false
 
+[profile.bench]
+lto="thin"

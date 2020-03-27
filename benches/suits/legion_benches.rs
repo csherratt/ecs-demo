@@ -276,9 +276,11 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
                 (0..dataset_size).map(|_| (A(0),))
             );
             let query = <Read<A>>::query();
-            BENCH::run(bencher, dataset_size as u32, |iters| {
-                for a in query.iter(&mut world).take(iters as usize) {
+            BENCH::run(bencher, dataset_size as u32, |mut iters| {
+                for a in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box(*a);
+                    iters -= 1;
+                    if iters == 0 { break }
                 }
             });
         });
@@ -289,9 +291,11 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
                 (0..dataset_size).map(|_| (A(0), B(0)))
             );
             let query = <(Read<A>, Read<B>)>::query();
-            BENCH::run(bencher, dataset_size as u32, |iters| {
-                for (a, b) in query.iter(&mut world).take(iters as usize) {
+            BENCH::run(bencher, dataset_size as u32, |mut iters| {
+                for (a, b) in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box((*a, *b));
+                    iters -= 1;
+                    if iters == 0 { break }
                 }
             });
         });
@@ -302,9 +306,11 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
                 (0..dataset_size).map(|_| (A(0), B(0), C(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>)>::query();
-            BENCH::run(bencher, dataset_size as u32, |iters| {
-                for (a, b, c) in query.iter(&mut world).take(iters as usize) {
+            BENCH::run(bencher, dataset_size as u32, |mut iters| {
+                for (a, b, c) in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box((*a, *b, *c));
+                    iters -= 1;
+                    if iters == 0 { break }
                 }
             });
         });
@@ -315,9 +321,11 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
                 (0..dataset_size).map(|_| (A(0), B(0), C(0), D(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>, Read<D>)>::query();
-            BENCH::run(bencher, dataset_size as u32, |iters| {
-                for (a, b, c, d) in query.iter(&mut world).take(iters as usize) {
+            BENCH::run(bencher, dataset_size as u32, |mut iters| {
+                for (a, b, c, d) in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box((*a, *b, *c, *d));
+                    iters -= 1;
+                    if iters == 0 { break }
                 }
             });
         });
@@ -328,9 +336,11 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
                 (0..dataset_size).map(|_| (A(0), B(0), C(0), D(0), E(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>, Read<D>, Read<E>)>::query();
-            BENCH::run(bencher, dataset_size as u32, |iters| {
-                for (a, b, c, d, e) in query.iter(&mut world).take(iters as usize) {
+            BENCH::run(bencher, dataset_size as u32, |mut iters| {
+                for (a, b, c, d, e) in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box((*a, *b, *c, *d, *e));
+                    iters -= 1;
+                    if iters == 0 { break }
                 }
             });
         });
@@ -341,9 +351,11 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
                 (0..dataset_size).map(|_| (A(0), B(0), C(0), D(0), E(0), F(0)))
             );
             let query = <(Read<A>, Read<B>, Read<C>, Read<D>, Read<E>, Read<F>)>::query();
-            BENCH::run(bencher, dataset_size as u32, |iters| {
-                for (a, b, c, d, e, f) in query.iter(&mut world).take(iters as usize) {
+            BENCH::run(bencher, dataset_size as u32, |mut iters| {
+                for (a, b, c, d, e, f) in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box((*a, *b, *c, *d, *e, *f));
+                    iters -= 1;
+                    if iters == 0 { break }
                 }
             });
         });
