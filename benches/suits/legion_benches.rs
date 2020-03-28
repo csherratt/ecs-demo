@@ -3,39 +3,8 @@ use legion::prelude::*;
 use criterion::measurement::WallTime;
 use super::super::utils::{Warm, Cold, CustomBencher};
 use std::time::Instant;
+use crate::suits::{A, B, C, D, E, F, G, H, I, J, K};
 
-#[derive(Copy, Clone, Debug, Default)]
-struct A(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct B(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct C(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct D(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct E(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct F(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct G(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct H(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct I(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct J(u32);
-
-#[derive(Copy, Clone, Debug, Default)]
-struct K(u32);
 
 fn legion_world_create() -> World {
     let world = World::new();
@@ -362,20 +331,21 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
     }
 }
 
-pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>) {
-    fn build_with_archetypes(count: u32) -> World {
+pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>, per_archtype: usize, dataset_size: usize) {
+    fn build_with_archetypes(per_archtype: usize, dataset_size: usize) -> World {
         let mut world = World::new();
-        for i in 0..count {
+        for i in 0..(per_archtype*dataset_size) {
+            let i = i as u32;
             let entity = world.insert(
                 (),
                 Some((A(i),)).into_iter()
             )[0];
 
-            if count == 0 {
+            if per_archtype == 1 {
                 continue;
             }
 
-            let n = i % count;
+            let n = i % (per_archtype - 1) as u32;
             if n & 1 != 0 { world.add_component(entity, B(i)); }
             if n & 2 != 0 { world.add_component(entity, C(i)); }
             if n & 4 != 0 { world.add_component(entity, D(i)); }
@@ -390,24 +360,20 @@ pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>) {
         world
     }
 
-    for count in (1..=128).step_by(8) {
-        group.bench_with_input(BenchmarkId::new("legion-cold", count), &count, |bencher, &count| {
-            let mut world = build_with_archetypes(count);
-            let query = <Read<A>>::query();
-            Cold::run(bencher, count, |max| {
-                for value in query.iter(&mut world).take(max as usize) {
-                    criterion::black_box(*value);
-                }
-            });
-        });
-    }
-    for count in (1..=128).step_by(8) {
-        group.bench_with_input(BenchmarkId::new("legion-warm", count), &count, |bencher, &count| {
-            let mut world = build_with_archetypes(count);
-            let query = <Read<A>>::query();
-            Warm::run(bencher, count, |max| {
-                for value in query.iter(&mut world).take(max as usize) {
-                    criterion::black_box(*value);
+    bench_with::<Warm>(group, "legion-warm", per_archtype, dataset_size);
+    bench_with::<Cold>(group, "legion-cold", per_archtype, dataset_size);
+
+    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str, per_archtype: usize, dataset_size: usize)
+        where BENCH: CustomBencher
+    {
+        let mut world = build_with_archetypes(per_archtype, dataset_size);
+        let query = <Read<A>>::query();
+        group.bench_with_input(BenchmarkId::new(name, dataset_size), &dataset_size, |bencher, &_| {
+            BENCH::run(bencher, (dataset_size * per_archtype) as u32, |mut iters| {
+                for a in query.iter(&mut world)/*.take(iters as usize)*/ {
+                    criterion::black_box(*a);
+                    iters -= 1;
+                    if iters == 0 { break }
                 }
             });
         });

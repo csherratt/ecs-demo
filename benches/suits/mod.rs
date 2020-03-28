@@ -35,3 +35,16 @@ pub struct G(u32);
 #[derive(Component, Copy, Clone, Debug, Default)]
 #[storage(VecStorage)]
 pub struct H(u32);
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+#[storage(VecStorage)]
+pub struct I(u32);
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+#[storage(VecStorage)]
+pub struct J(u32);
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+#[storage(VecStorage)]
+pub struct K(u32);
+

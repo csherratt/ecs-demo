@@ -3,7 +3,7 @@ use criterion::*;
 use criterion::measurement::WallTime;
 use super::super::utils::{Cold, Warm, CustomBencher};
 use std::time::Instant;
-use crate::suits::{A, B, C, D, E, F, G, H};
+use crate::suits::{A, B, C, D, E, F, G, H, I, J, K};
 
 fn specs_world_create() -> specs::World {
     let mut world = specs::World::new();
@@ -15,6 +15,9 @@ fn specs_world_create() -> specs::World {
     world.register::<F>();
     world.register::<G>();
     world.register::<H>();
+    world.register::<I>();
+    world.register::<J>();
+    world.register::<K>();
     world
 }
 
@@ -280,7 +283,21 @@ pub fn specs_delete(group: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
-fn with_world<INNER>(dataset_size: u32, mut inner: INNER)
+fn wrap_world<INNER>(world: World, mut inner: INNER)
+    where INNER: FnMut(ReadStorage<A>, ReadStorage<B>, ReadStorage<C>,
+                       ReadStorage<D>, ReadStorage<E>, ReadStorage<F>)
+{
+    let (a, b, c, d, e, f) = world.system_data::<
+        (ReadStorage<A>,
+         ReadStorage<B>,
+         ReadStorage<C>,
+         ReadStorage<D>,
+         ReadStorage<E>,
+         ReadStorage<F>)>();
+    inner(a, b, c, d, e, f);
+}
+
+fn with_world<INNER>(dataset_size: u32,  inner: INNER)
     where INNER: FnMut(ReadStorage<A>, ReadStorage<B>, ReadStorage<C>,
                        ReadStorage<D>, ReadStorage<E>, ReadStorage<F>)
 {
@@ -295,14 +312,7 @@ fn with_world<INNER>(dataset_size: u32, mut inner: INNER)
             .with(F::default())
             .build();
     });
-    let (a, b, c, d, e, f) = world.system_data::<
-        (ReadStorage<A>,
-         ReadStorage<B>,
-         ReadStorage<C>,
-         ReadStorage<D>,
-         ReadStorage<E>,
-         ReadStorage<F>)>();
-    inner(a, b, c, d, e, f);
+    wrap_world(world, inner)
 }
 
 pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
@@ -368,6 +378,53 @@ pub fn iteration(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize) {
         });
     }
 }
+
+pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>, per_archtype: usize, dataset_size: usize) {
+    fn build_with_archetypes(per_archtype: usize, dataset_size: usize) -> World {
+        let mut world = specs_world_create();
+        for i in 0..(per_archtype*dataset_size) {
+            let i = i as u32;
+            let mut builder = world.create_entity()
+                .with(A(i));
+            if per_archtype == 1 {
+                builder.build();
+                continue;
+            }
+            let n = i % (per_archtype - 1) as u32;
+            if n & 1 != 0 { builder = builder.with(B(i)); }
+            if n & 2 != 0 { builder = builder.with(C(i)); }
+            if n & 4 != 0 { builder = builder.with(D(i)); }
+            if n & 8 != 0 { builder = builder.with(E(i)); }
+            if n & 16 != 0 { builder = builder.with(F(i)); }
+            if n & 32 != 0 { builder = builder.with(G(i)); }
+            if n & 64 != 0 { builder = builder.with(H(i)); }
+            if n & 128 != 0 { builder = builder.with(I(i)); }
+            if n & 256 != 0 { builder = builder.with(J(i)); }
+            if n & 512 != 0 { builder = builder.with(K(i)); }
+            builder.build();
+        }
+        world
+    }
+
+    bench_with::<Warm>(group, "specs-warm", per_archtype, dataset_size);
+    bench_with::<Cold>(group, "specs-cold", per_archtype, dataset_size);
+
+    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str, per_archtype: usize, dataset_size: usize)
+        where BENCH: CustomBencher
+    {
+        group.bench_with_input(BenchmarkId::new(name, dataset_size), &dataset_size, |bencher, &_| {
+            let world = build_with_archetypes(per_archtype, dataset_size);
+            wrap_world(world, |a, _, _, _, _, _| {
+                BENCH::run(bencher, (dataset_size * per_archtype) as u32, |iters| {
+                    for (a, ) in (&a, ).join().take(iters as usize) {
+                        black_box(*a);
+                    }
+                })
+            });
+        });
+    }
+}
+
 
 
 
