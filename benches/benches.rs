@@ -17,7 +17,7 @@ fn main() {
         .warm_up_time(Duration::from_millis(100))
         .configure_from_args();
 
-    for &dataset_size in &[25, 100, 250, 1000, 2500] {
+    for &dataset_size in &[10, 25, 100, 250, 1_000, 2_500, 10_000] {
         let mut group = criterion.benchmark_group(format!("iteration-{}", dataset_size));
         baseline_benches::iteration_aos(&mut group, dataset_size);
         baseline_benches::iteration_soa(&mut group, dataset_size);
