@@ -12,6 +12,11 @@ iteration_results = "target/iteration.csv"
 
 is_result = re.compile(".*[\\/]new")
 archetype = re.compile(r".*iteration-archetypes-([0-9]+)[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+saturation_small = re.compile(r".*iteration-saturation-small-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+saturation_large = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+saturation_reorder = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+saturation_reorder = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+saturation_reorder = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
 iteration = re.compile(r".*iteration-([0-9]+)[/\\]([a-zA-Z\-]+)[/\\]([0-9+])")
 
 basedir = os.path.join("target", "results")
@@ -26,8 +31,20 @@ iteration_results = {}
 iteration_results_dir = os.path.join(basedir, "iteration")
 iteration_result_path = lambda name: os.path.join(iteration_results_dir, name)
 
+# type -> 16384 -> dataset size
+saturation_small_results = {}
+saturation_small_results_dir = os.path.join(basedir, "saturation-small")
+saturation_small_result_path = lambda name: os.path.join(saturation_small_results_dir, name)
+
+# type -> 1048576 -> dataset size
+saturation_large_results = {}
+saturation_large_results_dir = os.path.join(basedir, "saturation-large")
+saturation_large_result_path = lambda name: os.path.join(saturation_large_results_dir, name)
+
 os.makedirs(archetypes_results_dir, exist_ok=True)
 os.makedirs(iteration_results_dir, exist_ok=True)
+os.makedirs(saturation_small_results_dir, exist_ok=True)
+os.makedirs(saturation_large_results_dir, exist_ok=True)
 
 def get_estimates(file):
 	return json.load(file)["Median"]
@@ -50,6 +67,24 @@ def for_iteration(path):
 			match.group(2), {}
 		).setdefault(int(match.group(3)), {})[int(match.group(1))] = get_estimates(file)
 
+def for_saturation_small(path):
+	match = saturation_small.match(path)
+	if match == None:
+		return
+	with open(path) as file:
+		saturation_small_results.setdefault(
+			match.group(1), {}
+		).setdefault(16384, {})[float(match.group(2)) / 16384.0] = get_estimates(file)
+
+def for_saturation_large(path):
+	match = saturation_large.match(path)
+	if match == None:
+		return
+	with open(path) as file:
+		saturation_large_results.setdefault(
+			match.group(1), {}
+		).setdefault(1048576, {})[float(match.group(2)) / 1048576.0] = get_estimates(file)
+
 def find_results():
 	for directory, _, files in os.walk(base):
 		if is_result.match(directory) == None:
@@ -59,8 +94,13 @@ def find_results():
 		path = os.path.join(directory, "estimates.json")
 		for_archetypes(path)
 		for_iteration(path)
+		for_saturation_small(path)
+		for_saturation_large(path)
 
 def print_results(results, path_function, col_label, row_label):
+	if len(results) == 0:
+		return
+
 	benches = sorted(results.keys())
 	headers_cols = sorted(results[benches[0]].keys())
 	headers_rows = sorted(results[benches[0]][headers_cols[0]].keys())
@@ -87,3 +127,5 @@ def print_results(results, path_function, col_label, row_label):
 find_results()
 print_results(archetype_results, archetypes_result_path, "by-archetype-entities", "by-entities-archetypes")
 print_results(iteration_results, iteration_result_path, "by-components-entities", "by-entites-components")
+print_results(saturation_small_results, saturation_small_result_path, "null", "by-saturation-small")
+print_results(saturation_large_results, saturation_large_result_path, "null", "by-saturation-large")

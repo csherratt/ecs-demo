@@ -5,7 +5,10 @@ use super::super::utils::{Warm, Cold, CustomBencher};
 use std::time::Instant;
 use crate::suits::{A, B, C, D, E, F, G, H, I, J, K};
 use rand::seq::SliceRandom;
+use std::collections::HashSet;
 
+#[derive(Copy, Clone, Debug, Default)]
+pub struct Huge([u32; 16]);
 
 fn legion_world_create() -> World {
     let world = World::new();
@@ -381,29 +384,98 @@ pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>, per_archtyp
     }
 }
 
-pub fn iteration_by_stride(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize, with_alt: usize) {
-    fn build_with_archetypes(dataset_size: usize, with_alt: usize) -> World {
+pub fn iteration_by_saturation(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize, with_alt: usize, reorder: bool) {
+    fn build_with_archetypes(dataset_size: usize, with_alt: usize, reorder: bool) -> World {
         let mut world = World::new();
-        let mut entities: Vec<_> = world.insert(
+        let all_entities: Vec<_> = world.insert(
             (),
             (0..dataset_size).map(|_| (A(0), ))
         ).into();
 
+        let mut entities = all_entities.clone();
         entities.shuffle(&mut rand::thread_rng());
-        for entity in entities.into_iter().take(with_alt) {
-            world.add_component(entity, B(0));
+        entities.truncate(with_alt);
+
+        if reorder {
+            let entities: HashSet<_> = entities.into_iter().collect();
+            for entity in all_entities.into_iter().filter(|e| entities.contains(e)) {
+                world.add_component(entity, B(0));
+            }
+        } else {
+            for entity in entities.into_iter() {
+                world.add_component(entity, B(0));
+            }
         }
+
         world
     }
 
-    bench_with::<Warm>(group, "legion-warm", dataset_size, with_alt);
-    bench_with::<Cold>(group, "legion-cold", dataset_size, with_alt);
+    bench_with::<Warm>(group, "legion-warm", dataset_size, with_alt, reorder);
+    bench_with::<Cold>(group, "legion-cold", dataset_size, with_alt, reorder);
 
-    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str, dataset_size: usize, with_alt: usize)
+    fn bench_with<BENCH>(
+        group: &mut BenchmarkGroup<WallTime>,
+        name: &str,
+        dataset_size: usize,
+        with_alt: usize,
+        reorder: bool
+    )
         where BENCH: CustomBencher
     {
-        let mut world = build_with_archetypes(dataset_size, with_alt);
+        let mut world = build_with_archetypes(dataset_size, with_alt, reorder);
         let query = <(Read<A>, Read<B>)>::query();
+        group.bench_with_input(BenchmarkId::new(name, with_alt), &with_alt, |bencher, &_| {
+            BENCH::run(bencher, with_alt as u32, |mut iters| {
+                for (a, b) in query.iter(&mut world) {
+                    criterion::black_box((*a, *b));
+                    iters -= 1;
+                    if iters == 0 { break }
+                }
+            });
+        });
+    }
+}
+
+pub fn iteration_by_saturation_huge(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize, with_alt: usize, reorder: bool) {
+    fn build_with_archetypes(dataset_size: usize, with_alt: usize, reorder: bool) -> World {
+        let mut world = World::new();
+        let all_entities: Vec<_> = world.insert(
+            (),
+            (0..dataset_size).map(|_| (A(0), ))
+        ).into();
+
+        let mut entities = all_entities.clone();
+        entities.shuffle(&mut rand::thread_rng());
+        entities.truncate(with_alt);
+
+        if reorder {
+            let entities: HashSet<_> = entities.into_iter().collect();
+            for entity in all_entities.into_iter().filter(|e| entities.contains(e)) {
+                world.add_component(entity, Huge::default());
+            }
+        } else {
+            for entity in entities.into_iter() {
+                world.add_component(entity, Huge::default());
+            }
+        }
+
+        world
+    }
+
+    bench_with::<Warm>(group, "legion-warm", dataset_size, with_alt, reorder);
+    bench_with::<Cold>(group, "legion-cold", dataset_size, with_alt, reorder);
+
+    fn bench_with<BENCH>(
+        group: &mut BenchmarkGroup<WallTime>,
+        name: &str,
+        dataset_size: usize,
+        with_alt: usize,
+        reorder: bool
+    )
+        where BENCH: CustomBencher
+    {
+        let mut world = build_with_archetypes(dataset_size, with_alt, reorder);
+        let query = <(Read<A>, Read<Huge>)>::query();
         group.bench_with_input(BenchmarkId::new(name, with_alt), &with_alt, |bencher, &_| {
             BENCH::run(bencher, with_alt as u32, |mut iters| {
                 for (a, b) in query.iter(&mut world) {

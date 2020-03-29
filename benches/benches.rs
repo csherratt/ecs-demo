@@ -37,11 +37,41 @@ fn main() {
     }
 
     for &alt_size in &[1, 4, 16, 64, 256, 1024, 4096, 16384] {
-        let mut group = criterion.benchmark_group(format!("iteration-saturation-{}", alt_size));
-        legion_benches::iteration_by_stride(&mut group, 16384, alt_size);
-        specs_benches::iteration_by_stride(&mut group, 16384, alt_size);
+        let mut group = criterion.benchmark_group("iteration-saturation-small-dataset");
+        legion_benches::iteration_by_saturation(&mut group, 16384, alt_size, false);
+        specs_benches::iteration_by_saturation(&mut group, 16384, alt_size, false);
         group.finish();
     }
+
+    for &alt_size in &[1, 4, 16, 64, 256, 1024, 4096, 16384, 32768, 65536, 131072, 262144, 524288, 1048576] {
+        let mut group = criterion.benchmark_group("iteration-saturation-large-dataset");
+        legion_benches::iteration_by_saturation(&mut group, 1048576, alt_size, false);
+        specs_benches::iteration_by_saturation(&mut group, 1048576, alt_size, false);
+        group.finish();
+    }
+
+    for &alt_size in &[1, 4, 16, 64, 256, 1024, 4096, 16384] {
+        let mut group = criterion.benchmark_group("iteration-saturation-small-dataset-reorder");
+        legion_benches::iteration_by_saturation(&mut group, 16384, alt_size, true);
+        specs_benches::iteration_by_saturation(&mut group, 16384, alt_size, true);
+        group.finish();
+    }
+
+    for &alt_size in &[1, 4, 16, 64, 256, 1024, 4096, 16384] {
+        let mut group = criterion.benchmark_group("iteration-saturation-huge-value");
+        legion_benches::iteration_by_saturation_huge(&mut group, 16384, alt_size, false);
+        specs_benches::iteration_by_saturation_huge(&mut group, 16384, alt_size, false);
+        group.finish();
+    }
+
+    for &alt_size in &[1, 4, 16, 64, 256, 1024, 4096, 16384] {
+        let mut group = criterion.benchmark_group("iteration-saturation-huge-reorder");
+        legion_benches::iteration_by_saturation_huge(&mut group, 16384, alt_size, true);
+        specs_benches::iteration_by_saturation_huge(&mut group, 16384, alt_size, true);
+        group.finish();
+    }
+
+
 
     let mut group = criterion.benchmark_group("create");
     specs_benches::specs_create(&mut group);
