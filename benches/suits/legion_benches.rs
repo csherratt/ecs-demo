@@ -4,6 +4,7 @@ use criterion::measurement::WallTime;
 use super::super::utils::{Warm, Cold, CustomBencher};
 use std::time::Instant;
 use crate::suits::{A, B, C, D, E, F, G, H, I, J, K};
+use rand::seq::SliceRandom;
 
 
 fn legion_world_create() -> World {
@@ -372,6 +373,41 @@ pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>, per_archtyp
             BENCH::run(bencher, (dataset_size * per_archtype) as u32, |mut iters| {
                 for a in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box(*a);
+                    iters -= 1;
+                    if iters == 0 { break }
+                }
+            });
+        });
+    }
+}
+
+pub fn iteration_by_stride(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize, with_alt: usize) {
+    fn build_with_archetypes(dataset_size: usize, with_alt: usize) -> World {
+        let mut world = World::new();
+        let mut entities: Vec<_> = world.insert(
+            (),
+            (0..dataset_size).map(|_| (A(0), ))
+        ).into();
+
+        entities.shuffle(&mut rand::thread_rng());
+        for entity in entities.into_iter().take(with_alt) {
+            world.add_component(entity, B(0));
+        }
+        world
+    }
+
+    bench_with::<Warm>(group, "legion-warm", dataset_size, with_alt);
+    bench_with::<Cold>(group, "legion-cold", dataset_size, with_alt);
+
+    fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str, dataset_size: usize, with_alt: usize)
+        where BENCH: CustomBencher
+    {
+        let mut world = build_with_archetypes(dataset_size, with_alt);
+        let query = <(Read<A>, Read<B>)>::query();
+        group.bench_with_input(BenchmarkId::new(name, with_alt), &with_alt, |bencher, &_| {
+            BENCH::run(bencher, with_alt as u32, |mut iters| {
+                for (a, b) in query.iter(&mut world) {
+                    criterion::black_box((*a, *b));
                     iters -= 1;
                     if iters == 0 { break }
                 }

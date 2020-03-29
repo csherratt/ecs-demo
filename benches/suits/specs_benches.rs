@@ -1,9 +1,27 @@
 use specs::prelude::*;
+use specs::storage::BTreeStorage;
 use criterion::*;
 use criterion::measurement::WallTime;
 use super::super::utils::{Cold, Warm, CustomBencher};
 use std::time::Instant;
 use crate::suits::{A, B, C, D, E, F, G, H, I, J, K};
+use rand::prelude::SliceRandom;
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+#[storage(VecStorage)]
+pub struct VecStore(u32);
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+#[storage(DenseVecStorage)]
+pub struct DenseVec(u32);
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+#[storage(BTreeStorage)]
+pub struct BTree(u32);
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+#[storage(HashMapStorage)]
+pub struct HashMap(u32);
 
 fn specs_world_create() -> specs::World {
     let mut world = specs::World::new();
@@ -18,6 +36,10 @@ fn specs_world_create() -> specs::World {
     world.register::<I>();
     world.register::<J>();
     world.register::<K>();
+    world.register::<VecStore>();
+    world.register::<DenseVec>();
+    world.register::<BTree>();
+    world.register::<HashMap>();
     world
 }
 
@@ -425,6 +447,48 @@ pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>, per_archtyp
     }
 }
 
+pub fn iteration_by_stride(group: &mut BenchmarkGroup<WallTime>, dataset_size: usize, with_alt: usize) {
+    fn build_with_archetypes<Alt>(dataset_size: usize, with_alt: usize, value: Alt) -> World
+        where Alt: Copy + Component
+    {
+        let mut world = specs_world_create();
+        let mut entities: Vec<_> = world.create_iter().take(dataset_size).collect();
+        let mut component_a = world.write_component::<A>();
+        let mut component_alt = world.write_component::<Alt>();
+        for &entity in &entities {
+            component_a.insert(entity, A(0)).unwrap();
+        }
+        entities.shuffle(&mut rand::thread_rng());
+        for &entity in entities.iter().take(with_alt) {
+            component_alt.insert(entity, value).unwrap();
+        }
+        drop((component_a, component_alt));
+        world
+    }
 
+    bench_with::<Warm, VecStore>(group, "specs-warm-vecmap", dataset_size, with_alt, VecStore(0));
+    bench_with::<Cold, VecStore>(group, "specs-cold-vecmap", dataset_size, with_alt, VecStore(0));
+    bench_with::<Warm, DenseVec>(group, "specs-warm-densevecmap", dataset_size, with_alt, DenseVec(0));
+    bench_with::<Cold, DenseVec>(group, "specs-cold-densevecmap", dataset_size, with_alt, DenseVec(0));
+    bench_with::<Warm, BTree>(group, "specs-warm-btreemap", dataset_size, with_alt, BTree(0));
+    bench_with::<Cold, BTree>(group, "specs-cold-btreemap", dataset_size, with_alt, BTree(0));
+    bench_with::<Warm, HashMap>(group, "specs-warm-hashmap", dataset_size, with_alt, HashMap(0));
+    bench_with::<Cold, HashMap>(group, "specs-cold-hashmap", dataset_size, with_alt, HashMap(0));
+
+    fn bench_with<BENCH, ALT>(group: &mut BenchmarkGroup<WallTime>, name: &str, dataset_size: usize, with_alt: usize, value: ALT)
+        where BENCH: CustomBencher,
+              ALT: Copy + Component
+    {
+        group.bench_with_input(BenchmarkId::new(name, with_alt), &with_alt, |bencher, &_| {
+            let world = build_with_archetypes(dataset_size, with_alt, value);
+            let (a, b) = world.system_data::<(ReadStorage<A>, ReadStorage<ALT>)>();
+            BENCH::run(bencher, with_alt as u32, |iters| {
+                for (a, b) in (&a, &b).join().take(iters as usize) {
+                    black_box((*a, *b));
+                }
+            })
+        });
+    }
+}
 
 
