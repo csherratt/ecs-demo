@@ -57,3 +57,20 @@ impl CustomBencher for Warm {
         });
     }
 }
+
+pub fn bencher_max_size<T, F, U>(bencher: &mut Bencher, max_amount: u64, mut setup: F, mut inner: U)
+    where F: FnMut() -> T,  U: FnMut(T, u64)
+{
+    bencher.iter_custom(|mut iters| {
+        let mut total = Duration::from_nanos(0);
+        while iters > 0 {
+            let rounds = min(max_amount, iters);
+            let value = setup();
+            let start = Instant::now();
+            inner(value, rounds);
+            total += Instant::now().duration_since(start);
+            iters -= rounds;
+        }
+        total
+    });
+}

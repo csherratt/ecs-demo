@@ -8,7 +8,6 @@ extern crate rand;
 
 use suits::*;
 use criterion::Criterion;
-use std::time::Duration;
 use crate::suits::legion_parallel::legion_mandelbrot;
 use crate::suits::specs_parallel::specs_mandelbrot;
 
@@ -17,8 +16,7 @@ mod utils;
 
 fn main() {
     let mut criterion = Criterion::default()
-        .warm_up_time(Duration::from_millis(100))
-        .sample_size(10)
+        .sample_size(25)
         .configure_from_args();
 
     for &dataset_size in &[10, 25, 100, 250, 1_000, 2_500, 10_000] {
@@ -79,7 +77,7 @@ fn main() {
     legion_benches::legion_create(&mut group);
     group.finish();
 
-    let mut group = criterion.benchmark_group("create");
+    let mut group = criterion.benchmark_group("delete");
     specs_benches::specs_delete(&mut group);
     legion_benches::legion_delete(&mut group);
     group.finish();

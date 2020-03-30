@@ -16,7 +16,7 @@ fn legion_world_create() -> World {
 }
 
 pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
-    group.bench_with_input(BenchmarkId::new("once", 0), &0, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-once", 0), &0, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -29,7 +29,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
             end.duration_since(start)
         });
     });
-    group.bench_with_input(BenchmarkId::new("once", 1), &1, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-once", 1), &1, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -42,7 +42,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
             end.duration_since(start)
         });
     });
-    group.bench_with_input(BenchmarkId::new("once", 2), &2, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-once", 2), &2, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -55,7 +55,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
             end.duration_since(start)
         });
     });
-    group.bench_with_input(BenchmarkId::new("once", 4), &4, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-once", 4), &4, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -68,7 +68,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
             end.duration_since(start)
         });
     });
-    group.bench_with_input(BenchmarkId::new("once", 6), &6, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-once", 6), &6, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -82,7 +82,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
             end.duration_since(start)
         });
     });
-    group.bench_with_input(BenchmarkId::new("once", 8), &8, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-once", 8), &8, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -96,7 +96,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
             end.duration_since(start)
         });
     });
-    group.bench_with_input(BenchmarkId::new("bulk", 0), &0, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-bulk", 0), &0, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -111,7 +111,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
         });
     });
 
-    group.bench_with_input(BenchmarkId::new("bulk", 1), &1, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-bulk", 1), &1, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -126,7 +126,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
         });
     });
 
-    group.bench_with_input(BenchmarkId::new("bulk", 2), &2, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-bulk", 2), &2, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -141,7 +141,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
         });
     });
 
-    group.bench_with_input(BenchmarkId::new("bulk", 4), &4, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-bulk", 4), &4, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -156,7 +156,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
         });
     });
 
-    group.bench_with_input(BenchmarkId::new("bulk", 6), &6, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-bulk", 6), &6, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
@@ -172,7 +172,7 @@ pub fn legion_create(group: &mut BenchmarkGroup<WallTime>) {
         });
     });
 
-    group.bench_with_input(BenchmarkId::new("bulk", 8), &8, |bencher, _| {
+    group.bench_with_input(BenchmarkId::new("legion-bulk", 8), &8, |bencher, _| {
         bencher.iter_custom(|iters| {
             let mut world = legion_world_create();
             let start = Instant::now();
