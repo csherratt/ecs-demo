@@ -18,6 +18,7 @@ mod utils;
 fn main() {
     let mut criterion = Criterion::default()
         .warm_up_time(Duration::from_millis(100))
+        .sample_size(10)
         .configure_from_args();
 
     for &dataset_size in &[10, 25, 100, 250, 1_000, 2_500, 10_000] {
@@ -84,8 +85,8 @@ fn main() {
     group.finish();
 
     let mut group = criterion.benchmark_group("mandlebrot");
-    specs_mandelbrot(&mut group, 1024, 1024);
-    legion_mandelbrot(&mut group, 1024, 1024);
+    specs_mandelbrot(&mut group, 1792, 1024);
+    legion_mandelbrot(&mut group, 1792, 1024);
     group.finish();
 
     criterion.final_summary();

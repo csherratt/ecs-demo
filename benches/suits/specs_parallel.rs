@@ -23,7 +23,7 @@ impl<'a>  System<'a> for Mandelbrot {
             .for_each(|(&Coordinate(x0, y0), rounds)| {
                 let (mut x, mut y) = (0., 0.);
                 let mut i = 0;
-                while i < 1_000 && x*x + y*y <= 4. {
+                while i < 100 && x*x + y*y <= 4. {
                     let x_temp = x*x - y*y + x0;
                     y = 2.*x*y + y0;
                     x = x_temp;
@@ -52,7 +52,10 @@ pub fn specs_mandelbrot(group: &mut BenchmarkGroup<WallTime>, width: u32, height
                 for x in 0..width {
                     let entity = *entities.next().unwrap();
                     xy.insert(entity, XY(x, y)).unwrap();
-                    let (x, y) = (x as f32 * 3.5 - 2.5, y as f32 * 2. - 1.);
+                    let (x, y) = (
+                        x as f32 / width as f32 * 3.5 - 2.5,
+                        y as f32 / height as f32 * 2. - 1.
+                    );
                     coordinate.insert(entity, Coordinate(x, y)).unwrap();
                     rounds.insert(entity, Rounds(0)).unwrap();
                 }

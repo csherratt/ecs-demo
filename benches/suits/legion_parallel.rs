@@ -19,7 +19,10 @@ pub fn legion_mandelbrot(group: &mut BenchmarkGroup<WallTime>, width: u32, heigh
             (0..width)
                 .flat_map(|x| (0..height).map(move |y| (x, y)))
                 .map(|(x, y)| {
-                    let (xf, yf) = (x as f32 * 3.5 - 2.5, y as f32 * 2. - 1.);
+                    let (xf, yf) = (
+                        x as f32 / width as f32 * 3.5 - 2.5,
+                        y as f32 / height as f32 * 2. - 1.
+                    );
                     (XY(x, y), Coordinate(xf, yf), Rounds(0))
                 })
         );
@@ -30,7 +33,7 @@ pub fn legion_mandelbrot(group: &mut BenchmarkGroup<WallTime>, width: u32, heigh
                 let Coordinate(x0, y0) = *coord;
                 let (mut x, mut y) = (0., 0.);
                 let mut i = 0;
-                while i < 1_000 && x*x + y*y <= 4. {
+                while i < 100 && x*x + y*y <= 4. {
                     let x_temp = x*x - y*y + x0;
                     y = 2.*x*y + y0;
                     x = x_temp;
