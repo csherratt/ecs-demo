@@ -56,7 +56,7 @@ fn specs_world_create() -> specs::World {
     world.register::<DenseVec>();
     world.register::<BTree>();
     world.register::<HashMap>();
-    world.register::<VecStore>();
+    world.register::<VecStoreHuge>();
     world.register::<DenseVecHuge>();
     world.register::<BTreeHuge>();
     world.register::<HashMapHuge>();
