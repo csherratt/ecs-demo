@@ -370,9 +370,9 @@ pub fn iteration_by_archetypes(group: &mut BenchmarkGroup<WallTime>, per_archtyp
     fn bench_with<BENCH>(group: &mut BenchmarkGroup<WallTime>, name: &str, per_archtype: usize, dataset_size: usize)
         where BENCH: CustomBencher
     {
-        let mut world = build_with_archetypes(per_archtype, dataset_size);
-        let query = <Read<A>>::query();
         group.bench_with_input(BenchmarkId::new(name, dataset_size), &dataset_size, |bencher, &_| {
+            let mut world = build_with_archetypes(per_archtype, dataset_size);
+            let query = <Read<A>>::query();
             BENCH::run(bencher, (dataset_size * per_archtype) as u32, |mut iters| {
                 for a in query.iter(&mut world)/*.take(iters as usize)*/ {
                     criterion::black_box(*a);
@@ -422,9 +422,9 @@ pub fn iteration_by_saturation(group: &mut BenchmarkGroup<WallTime>, dataset_siz
     )
         where BENCH: CustomBencher
     {
-        let mut world = build_with_archetypes(dataset_size, with_alt, reorder);
-        let query = <(Read<A>, Read<B>)>::query();
         group.bench_with_input(BenchmarkId::new(name, with_alt), &with_alt, |bencher, &_| {
+            let mut world = build_with_archetypes(dataset_size, with_alt, reorder);
+            let query = <(Read<A>, Read<B>)>::query();
             BENCH::run(bencher, with_alt as u32, |mut iters| {
                 for (a, b) in query.iter(&mut world) {
                     criterion::black_box((*a, *b));
@@ -474,9 +474,9 @@ pub fn iteration_by_saturation_huge(group: &mut BenchmarkGroup<WallTime>, datase
     )
         where BENCH: CustomBencher
     {
-        let mut world = build_with_archetypes(dataset_size, with_alt, reorder);
-        let query = <(Read<A>, Read<Huge>)>::query();
         group.bench_with_input(BenchmarkId::new(name, with_alt), &with_alt, |bencher, &_| {
+            let mut world = build_with_archetypes(dataset_size, with_alt, reorder);
+            let query = <(Read<A>, Read<Huge>)>::query();
             BENCH::run(bencher, with_alt as u32, |mut iters| {
                 for (a, b) in query.iter(&mut world) {
                     criterion::black_box((*a, *b));

@@ -12,16 +12,16 @@ iteration_results = "target/iteration.csv"
 
 is_result = re.compile(".*[\\/]new")
 archetype = re.compile(r".*iteration-archetypes-([0-9]+)[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+iteration = re.compile(r".*iteration-([0-9]+)[/\\]([a-zA-Z\-]+)[/\\]([0-9+])")
 saturation_small = re.compile(r".*iteration-saturation-small-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
 saturation_large = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
-saturation_reorder = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
-saturation_reorder = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
-saturation_reorder = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
-iteration = re.compile(r".*iteration-([0-9]+)[/\\]([a-zA-Z\-]+)[/\\]([0-9+])")
+saturation_reorder = re.compile(r".*iteration-saturation-small-dataset-reorder[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+saturation_huge = re.compile(r".*iteration-saturation-huge-value[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+saturation_huge_reorder = re.compile(r".*iteration-saturation-huge-reorder[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
 
 basedir = os.path.join("target", "results")
 
-# type -> points per archetypes -> archetypes
+# type -> points per arch etypes -> archetypes
 archetype_results = {}
 archetypes_results_dir = os.path.join(basedir, "iteration-archetypes")
 archetypes_result_path = lambda name: os.path.join(archetypes_results_dir, name)
@@ -41,10 +41,28 @@ saturation_large_results = {}
 saturation_large_results_dir = os.path.join(basedir, "saturation-large")
 saturation_large_result_path = lambda name: os.path.join(saturation_large_results_dir, name)
 
+# type -> 16384 -> dataset size
+saturation_small_reorder_results = {}
+saturation_small_reorder_results_dir = os.path.join(basedir, "saturation-small-reorder")
+saturation_small_reorder_result_path = lambda name: os.path.join(saturation_small_reorder_results_dir, name)
+
+# type -> 16384 -> dataset size
+saturation_huge_results = {}
+saturation_huge_results_dir = os.path.join(basedir, "saturation-huge")
+saturation_huge_result_path = lambda name: os.path.join(saturation_huge_results_dir, name)
+
+# type -> 16384 -> dataset size
+saturation_huge_reorder_results = {}
+saturation_huge_reorder_results_dir = os.path.join(basedir, "saturation-huge-reorder")
+saturation_huge_reorder_result_path = lambda name: os.path.join(saturation_huge_reorder_results_dir, name)
+
 os.makedirs(archetypes_results_dir, exist_ok=True)
 os.makedirs(iteration_results_dir, exist_ok=True)
 os.makedirs(saturation_small_results_dir, exist_ok=True)
 os.makedirs(saturation_large_results_dir, exist_ok=True)
+os.makedirs(saturation_small_reorder_results_dir, exist_ok=True)
+os.makedirs(saturation_huge_results_dir, exist_ok=True)
+os.makedirs(saturation_huge_reorder_results_dir, exist_ok=True)
 
 def get_estimates(file):
 	return json.load(file)["Median"]
@@ -67,23 +85,29 @@ def for_iteration(path):
 			match.group(2), {}
 		).setdefault(int(match.group(3)), {})[int(match.group(1))] = get_estimates(file)
 
-def for_saturation_small(path):
-	match = saturation_small.match(path)
+def saturation_inner(path, pattern, results, size):
+	match = pattern.match(path)
 	if match == None:
 		return
 	with open(path) as file:
-		saturation_small_results.setdefault(
+		results.setdefault(
 			match.group(1), {}
-		).setdefault(16384, {})[float(match.group(2)) / 16384.0] = get_estimates(file)
+		).setdefault(size, {})[float(match.group(2)) / float(size)] = get_estimates(file)
+
+def for_saturation_small(path):
+	saturation_inner(path, saturation_small, saturation_small_results, 16384)
 
 def for_saturation_large(path):
-	match = saturation_large.match(path)
-	if match == None:
-		return
-	with open(path) as file:
-		saturation_large_results.setdefault(
-			match.group(1), {}
-		).setdefault(1048576, {})[float(match.group(2)) / 1048576.0] = get_estimates(file)
+	saturation_inner(path, saturation_large, saturation_large_results, 1024*1024)
+
+def for_saturation_small_reorder(path):
+	saturation_inner(path, saturation_reorder, saturation_small_reorder_results, 16384)
+
+def for_saturation_huge(path):
+	saturation_inner(path, saturation_huge, saturation_huge_results, 16384)
+
+def for_saturation_huge_reorder(path):
+	saturation_inner(path, saturation_huge_reorder, saturation_huge_reorder_results, 16384)
 
 def find_results():
 	for directory, _, files in os.walk(base):
@@ -96,6 +120,9 @@ def find_results():
 		for_iteration(path)
 		for_saturation_small(path)
 		for_saturation_large(path)
+		for_saturation_small_reorder(path)
+		for_saturation_huge(path)
+		for_saturation_huge_reorder(path)
 
 def print_results(results, path_function, col_label, row_label):
 	if len(results) == 0:
@@ -129,3 +156,6 @@ print_results(archetype_results, archetypes_result_path, "by-archetype-entities"
 print_results(iteration_results, iteration_result_path, "by-components-entities", "by-entites-components")
 print_results(saturation_small_results, saturation_small_result_path, "null", "by-saturation-small")
 print_results(saturation_large_results, saturation_large_result_path, "null", "by-saturation-large")
+print_results(saturation_small_reorder_results, saturation_small_reorder_result_path, "null", "by-saturation-small-reorder")
+print_results(saturation_huge_results, saturation_huge_result_path, "null", "by-saturation-huge")
+print_results(saturation_huge_reorder_results, saturation_huge_reorder_result_path, "null", "by-saturation-huge-reorder")

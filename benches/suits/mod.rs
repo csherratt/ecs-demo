@@ -2,7 +2,9 @@ use specs::prelude::*;
 
 pub mod baseline_benches;
 pub mod legion_benches;
+pub mod legion_parallel;
 pub mod specs_benches;
+pub mod specs_parallel;
 
 #[derive(Component, Copy, Clone, Debug, Default)]
 #[storage(VecStorage)]

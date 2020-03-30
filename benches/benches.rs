@@ -9,6 +9,8 @@ extern crate rand;
 use suits::*;
 use criterion::Criterion;
 use std::time::Duration;
+use crate::suits::legion_parallel::legion_mandelbrot;
+use crate::suits::specs_parallel::specs_mandelbrot;
 
 mod suits;
 mod utils;
@@ -71,8 +73,6 @@ fn main() {
         group.finish();
     }
 
-
-
     let mut group = criterion.benchmark_group("create");
     specs_benches::specs_create(&mut group);
     legion_benches::legion_create(&mut group);
@@ -81,6 +81,11 @@ fn main() {
     let mut group = criterion.benchmark_group("create");
     specs_benches::specs_delete(&mut group);
     legion_benches::legion_delete(&mut group);
+    group.finish();
+
+    let mut group = criterion.benchmark_group("mandlebrot");
+    specs_mandelbrot(&mut group, 1024, 1024);
+    legion_mandelbrot(&mut group, 1024, 1024);
     group.finish();
 
     criterion.final_summary();
