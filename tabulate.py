@@ -18,6 +18,7 @@ saturation_large = re.compile(r".*iteration-saturation-large-dataset[\\/]([a-zA-
 saturation_reorder = re.compile(r".*iteration-saturation-small-dataset-reorder[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
 saturation_huge = re.compile(r".*iteration-saturation-huge-value[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
 saturation_huge_reorder = re.compile(r".*iteration-saturation-huge-reorder[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
+create = re.compile(r".*create[\\/]([a-zA-Z-]+)[\\/]([0-9]+)")
 
 basedir = os.path.join("target", "results")
 
@@ -56,6 +57,12 @@ saturation_huge_reorder_results = {}
 saturation_huge_reorder_results_dir = os.path.join(basedir, "saturation-huge-reorder")
 saturation_huge_reorder_result_path = lambda name: os.path.join(saturation_huge_reorder_results_dir, name)
 
+# type -> 16384 -> dataset size
+creation_results = {}
+creation_results_dir = os.path.join(basedir, "creation")
+creation_result_path = lambda name: os.path.join(creation_results_dir, name)
+
+
 os.makedirs(archetypes_results_dir, exist_ok=True)
 os.makedirs(iteration_results_dir, exist_ok=True)
 os.makedirs(saturation_small_results_dir, exist_ok=True)
@@ -63,6 +70,7 @@ os.makedirs(saturation_large_results_dir, exist_ok=True)
 os.makedirs(saturation_small_reorder_results_dir, exist_ok=True)
 os.makedirs(saturation_huge_results_dir, exist_ok=True)
 os.makedirs(saturation_huge_reorder_results_dir, exist_ok=True)
+os.makedirs(creation_results_dir, exist_ok=True)
 
 def get_estimates(file):
 	return json.load(file)["Median"]
@@ -109,6 +117,15 @@ def for_saturation_huge(path):
 def for_saturation_huge_reorder(path):
 	saturation_inner(path, saturation_huge_reorder, saturation_huge_reorder_results, 16384)
 
+def for_creation(path):
+	match = create.match(path)
+	if match == None:
+		return
+	with open(path) as file:
+		creation_results.setdefault(
+			match.group(1), {}
+		).setdefault("1", {})[int(match.group(2))] = get_estimates(file)
+
 def find_results():
 	for directory, _, files in os.walk(base):
 		if is_result.match(directory) == None:
@@ -123,6 +140,7 @@ def find_results():
 		for_saturation_small_reorder(path)
 		for_saturation_huge(path)
 		for_saturation_huge_reorder(path)
+		for_creation(path)
 
 def print_results(results, path_function, col_label, row_label):
 	if len(results) == 0:
@@ -159,3 +177,4 @@ print_results(saturation_large_results, saturation_large_result_path, "null", "b
 print_results(saturation_small_reorder_results, saturation_small_reorder_result_path, "null", "by-saturation-small-reorder")
 print_results(saturation_huge_results, saturation_huge_result_path, "null", "by-saturation-huge")
 print_results(saturation_huge_reorder_results, saturation_huge_reorder_result_path, "null", "by-saturation-huge-reorder")
+print_results(creation_results, creation_result_path, "null", "creation")
